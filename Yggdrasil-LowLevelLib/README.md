@@ -1,4 +1,4 @@
-#Yggdrasil Low Level Library
+# Yggdrasil Low Level Library
 
 The Lightkone-Base project is used to configure the device so that it can support the desired mode.
 
@@ -147,7 +147,7 @@ The following code describes how to create a new LKPhyKMessage:
 ```
 Note also that when sending a message through the channel completes the source address.
 
-###Demos
+### Demos
 
 This project offers 5 demos to test the basic functionalities of the project.
 These demos are Sender and Receiver applicatios. In order to test connectivity they should be used in pairs.

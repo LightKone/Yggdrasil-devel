@@ -1,4 +1,4 @@
-#Yggdrasil
+# Yggdrasil
 
 The Yggdrasil is used to develop protocols that run in wireless environments.
 This project is build upon Yggdrasil-LowLevelLib which is used to configure and manipulate the network devices.
@@ -37,7 +37,7 @@ The current priority is:
 4. LKRequest
 
 
-###Configuring the runtime
+### Configuring the runtime
 
 To run the protocols there should be a main app which will configure the runtime.
 
@@ -136,7 +136,7 @@ int lk_runtime_start();
 ```
 The applications registered are of the resposibility of the programmer and the runtime will not lunch threads for them if they are needed.
 
-###Designing Protocols
+### Designing Protocols
 
 
 We consider that which protocol is run by a thread, as such which protocol must have main function defined as:
