@@ -1,0 +1,35 @@
+
+=====================================================
+=                  Introduction                     =
+=====================================================
+
+This project presents the code of Yggdrasil, a framework
+tool to develop distributed protocols and applications
+on wireless adhoc networks in linux based systems.
+
+Inside there are two directories containing source code:
+
+1. Yggdrasil-LowLevelLib : This contains code related
+to configuring a device using low level operations.
+
+2. Yggdrasil: This contains code to develop protocols
+and applications and some examples.
+
+In order to compile Yggdrasil you need to have the 
+following depencies installed:
+
+1. libnl3
+2. uuid
+3. cmake
+
+Cmake will generate a makefile to compile Yggdrasil and
+its applications. To do so use the following command:
+
+1. cmake .
+2. make
+
+Inside Yggdrasil's project you can find examples on how to
+add and customize the compilation. These are present in the
+files CMakeList
+
+
