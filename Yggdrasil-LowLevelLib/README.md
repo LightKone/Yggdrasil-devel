@@ -1,37 +1,28 @@
+#Yggdrasil Low Level Library
 
-=====================================================
-=                  Introduction                     =
-=====================================================
+The Lightkone-Base project is used to configure the device so that it can support the desired mode.
 
-The Lightkone-Base project is used to configure the 
-device so that it can support the desired mode.
+In this version the Lightkone-Base project only supports the configuration for AdHoc mode in Wireless in Linux based systems.
 
-In this version the Lightkone-Base project only supports 
-the configuration for AdHoc mode in Wireless in Linux 
-based systems.
+To do this it uses the functions and data types defined in linux/nl80211.h and in the netlink library.
 
-To do this it uses the functions and data types defined 
-in linux/nl80211.h and in the netlink library.
+This project tries to abstract the user (programmer) to the issues of hand configuring the device.
 
-This project tries to abstract the user (programmer) to 
-the issues of hand configuring the device.
-
-The code written in based on the implementation of the 
-iw linux tool. The code can be found in:
+The code written in based on the implementation of the iw linux tool. The code can be found in:
 https://github.com/Distrotech/iw
 
 To do so, the project provides a simple API for setup:
-
+```c
 *********************************************************
  * Setup
  *********************************************************/
 
 int setupSimpleChannel(Channel* ch, NetworkConfig* ntconf);
 int setupChannelNetwork(Channel* ch, NetworkConfig* ntconf);
-
+```
 
 These 2 functions configure a Channel stucture:
-
+```c
 typedef struct _Channel {
     // socket descriptor
     int sockid;
@@ -42,9 +33,9 @@ typedef struct _Channel {
     // maximum transmission unit
     int mtu;
 } Channel;
-
+```
 Given the configuration defined in the data structure:
-
+```c
 typedef struct _NetworkConfig {
 	int type; //type of the required network (IFTYPE)
 	int freq; //frequency of the signal
@@ -54,26 +45,18 @@ typedef struct _NetworkConfig {
 	struct sock_filter* filter; //filter for the network
 	Interface* interfaceToUse; //interface to use
 } NetworkConfig;
+```
+The setupSimpleChannel function will analyse if there is a valid and available wireless network interface for the desired network defined in the NetworkConfig.
 
-The setupSimpleChannel function will analyse if there is
-a valid and available wireless network interface for the
-desired network defined in the NetworkConfig.
+If there is one, it will succeed and create a Channel by initializing a raw socket and associate it to the Channel.
 
-If there is one, it will succeed and create a Channel by
-initializing a raw socket and associate it to the Channel.
+The setupChannelNetwork will first scan the enviroment to check if there is already a network being anounced with the defined requirements in NetworkConfig.
 
-The setupChannelNetwork will first scan the enviroment to
-check if there is already a network being anounced with the
-defined requirements in NetworkConfig.
+If there is it will join the network, if not it will create a new network. To end the operation it will bind the socket in the Channel. 
 
-If there is it will join the network, if not it will create
-a new network. To end the operation it will bind the socket
-in the Channel. 
-
-The Channel is then ready be used for basic I/O operations
-(send/receive). For that the API also provides with these
-functions:
-
+The Channel is then ready be used for basic I/O operations (send/receive).
+For that the API also provides with these functions:
+```c
 /*********************************************************
  * Basic I/O
  *********************************************************/
@@ -112,13 +95,10 @@ int chbroadcast(Channel* ch, LKPhyMessage* message);
  * @return The number of bytes received
  */
 int chreceive(Channel* ch, LKPhyMessage* message);
+```
 
-
-All these functions use the LKPhyMessage data structure,
-which is defined as:
-
-=====================LKPhyMessage=======================
-
+All these functions use the LKPhyMessage data structure, which is defined as:
+```c
 // Lightkone Protocol message
 typedef struct _LKPhyMessage{
   //Physical Level header;
@@ -151,10 +131,10 @@ typedef struct _LKHeader{
    // Protocol family identifation
    unsigned char data[LK_HEADER_LEN];
 } LKHeader;
-
+```
 
 The following code describes how to create a new LKPhyKMessage:
-
+```c
 	LKMessage msg;
 	msg.LKProto = ProtocolID; //the protocol ID who created the message
 	msg.phyHeader.type = IP_TYPE; 
@@ -164,34 +144,27 @@ The following code describes how to create a new LKPhyKMessage:
 	msg.dataLen = dataLengt;
 	memcpy(msg.data, payloadToSend, msg.dataLen); //add the payload
 
+```
+Note also that when sending a message through the channel completes the source address.
 
-Note also that when sending a message through the channel
-the channel completes the source address.
+###Demos
 
-=====================================================
-=                     Demos                         =
-=====================================================
-
-This project offers 5 demos to test the basic functionalities 
-of the project. These demos are Sender and Receiver 
-applicatios. In order to test connectivity they should 
-be used in pairs.
+This project offers 5 demos to test the basic functionalities of the project.
+These demos are Sender and Receiver applicatios. In order to test connectivity they should be used in pairs.
 
 We provide the following demos:
 	
-	Sender
-	Receiver
-	SenderBrute
-	SenderWithReply
-	ReceiverWithReply
+* Sender
+* Receiver
+* SenderBrute
+* SenderWithReply
+* ReceiverWithReply
 
 The Sender applications sends a message each two seconds.
 The SenderBrute has a closed loop sending messages.
 The Receiver simple receives the message and prints it.
 
-The SenderWithReply sends a message and waits for two seconds 
-for the reply.
-The ReceiverWithReply receives a message and sends a reply to 
-the sender.
+The SenderWithReply sends a message and waits for two seconds for the reply.
+The ReceiverWithReply receives a message and sends a reply to the sender.
 
 
