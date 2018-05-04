@@ -54,4 +54,9 @@ int defineLKMFilter(Channel* ch);
 int defineFilter(Channel* ch, struct sock_filter* filter);
 
 
+/**********************************************************
+ * Retrive sys info
+ **********************************************************/
+double get_cpu_temp();
+
 #endif /* LK_HW_H_ */

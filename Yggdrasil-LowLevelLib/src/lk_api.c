@@ -157,6 +157,7 @@ int setupSimpleChannel(Channel* ch, NetworkConfig* ntconf){ //more parameters co
 	}
 
 	r = createChannel(ch, interfaceToUse->name);
+	fprintf(stderr, "INFO: CONNECTING TO INTERFACE -> '%s'", interfaceToUse->name);
 	if(r != 0) {
 		printError(r); fprintf(stderr,"\n"); exit(10);
 	}
@@ -178,7 +179,7 @@ int setupChannelNetwork(Channel* ch, NetworkConfig* ntconf) {
 		while(nt != NULL) {
 			if(ntconf->type == IFTYPE_ADHOC && nt->isIBSS == 1){
 				if(ntconf->mandatoryName && ntconf->freq == 0){
-					if(strcmp(ntconf->name, nt->ssid))
+					if(strcmp(ntconf->name, nt->ssid) == 0)
 						break;
 				} else if(ntconf->freq != 0){
 					if(ntconf->freq == nt->freq)
@@ -189,7 +190,7 @@ int setupChannelNetwork(Channel* ch, NetworkConfig* ntconf) {
 			}
 			else if(ntconf->type == IFTYPE_MESH && nt->mesh_info != NULL){
 				if(ntconf->mandatoryName && ntconf->freq == 0){
-					if(strcmp(ntconf->name, nt->ssid))
+					if(strcmp(ntconf->name, nt->ssid) == 0)
 						break;
 				} else if(ntconf->freq != 0){
 					if(ntconf->freq == nt->freq)

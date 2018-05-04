@@ -419,3 +419,24 @@ int defineFilter(Channel* ch, struct sock_filter* filter) {
 		return CHANNEL_FILTER_ERROR;
 	return 0;
 }
+
+/**************************************************
+ * System info
+ *************************************************/
+
+double get_cpu_temp(){
+
+	double systemp;
+	FILE *thermal;
+	int n;
+
+	thermal = fopen("/sys/class/thermal/thermal_zone0/temp","r");
+	n = fscanf(thermal,"%f",&systemp);
+	fclose(thermal);
+	//systemp = millideg / 1000;
+
+	return systemp;
+
+}
+
+
