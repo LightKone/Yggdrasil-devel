@@ -6,7 +6,7 @@
  * Authors:
  * Pedro Ákos Costa (pah.costa@campus.fct.unl.pt)
  * João Leitão (jc.leitao@fct.unl.pt)
- * (C) 2017
+ * (C) 2018
  *********************************************************/
 
 #ifndef CONTROL_COMMAND_TREE_H_
@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <time.h>
 
 #include <arpa/inet.h>
 
@@ -30,16 +31,10 @@
 #include "core/lk_runtime.h"
 #include "core/utils/queue.h"
 #include "protos/control/control_discovery.h"
-
-typedef enum CONTROL_COMMAND_TREE_REQUESTS_ {
-	IS_UP,
-	SETUP,
-	TEAR_DOWN,
-	DO_COMMAND,
-	GET_FILE,
-	RECONFIGURE
-} CONTROL_COMMAND_TREE_REQUESTS;
+#include "control_protocol_utils.h"
+#include "commands.h"
 
 void* control_command_tree_init(void* arg);
+void check_running_operations_completion();
 
 #endif /* CONTROL_COMMAND_TREE_H_ */

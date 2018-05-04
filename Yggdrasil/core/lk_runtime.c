@@ -247,6 +247,58 @@ static void setupTerminationSignalHandler() {
 
 }
 
+int lk_runtime_init_static(NetworkConfig* ntconf, int n_lk_protos, int n_protos, int n_apps) {
+
+	lk_loginit(); //Initialize logger
+
+	createChannel(&ch, "wlan0");
+	bindChannel(&ch);
+	set_ip_addr(&ch);
+	defineFilter(&ch, ntconf->filter);
+
+	n_lk_protos += 2; //Add the dispatcher and timer to the protos
+
+	totalNumberOfProtocols = n_lk_protos + n_protos;
+	maxApps = n_apps;
+	maxLKProtos = n_lk_protos;
+	maxProtos = n_protos;
+
+	setupTerminationSignalHandler();
+
+	srand(time(NULL));   // should only be called once
+	//genUUID(myuuid); //Use this line to generate a random uuid
+	genStaticUUID(myuuid); //Use this to generate a static uuid based on the hostname
+
+	tinfo = malloc(sizeof(thread_info) * totalNumberOfProtocols); //space for all protos
+	threads = 0;
+
+	if(init_lk_proto_info(n_lk_protos) == FAILED){ //Initialize the mandatory lightkone protocols (dispatcher and timer)
+		lk_log("LK_RUNTIME", "SETUP ERROR", "Failed to setup mandatory lk protocols dispatcher and timer");
+		lk_logflush();
+		exit(1);
+	}
+
+	//Ready the structure to have the information about Apps
+	if(maxApps > 0)
+		app_info.apps = malloc(sizeof(app) * maxApps);
+	else
+		app_info.apps = NULL;
+
+	app_info.napps = 0;
+
+	//Ready the structure to have information about user defined protocols
+	if(maxProtos > 0)
+		proto_info.protos = malloc(sizeof(proto) * n_protos);
+	else
+		proto_info.protos = NULL;
+
+	proto_info.nprotos = 0;
+
+	str2wlan((char*)bcastAddress.data, WLAN_BROADCAST);
+
+	return SUCCESS;
+}
+
 
 int lk_runtime_init(NetworkConfig* ntconf, int n_lk_protos, int n_protos, int n_apps) {
 
@@ -435,6 +487,13 @@ short registerApp(queue_t** app_inBox, int max_event_type){
 	return appID;
 }
 
+int changeDispatcherFunction(void * (*dispatcher)(void*)) {
+	//TODO
+	tinfo->proto = dispatcher;
+
+	return SUCCESS;
+}
+
 int updateProtoAttr(short protoID, void* protoAttr) {
 	int i;
 	for (i = 0; i < threads; i ++) {
@@ -549,6 +608,8 @@ int deliver(LKMessage* msg) {
 	elem.type = LK_MESSAGE;
 	memcpy(&elem.data.msg, msg, sizeof(LKMessage));
 
+	if(dropBox == NULL)
+		return FAILED;
 	queue_push(dropBox, &elem);
 
 	return SUCCESS;
@@ -564,6 +625,8 @@ int filterAndDeliver(LKMessage* msg) {
 		elem.type = LK_MESSAGE;
 		memcpy(&elem.data.msg, msg, sizeof(LKMessage));
 
+		if(dropBox == NULL)
+			return FAILED;
 		queue_push(dropBox, &elem);
 
 		return SUCCESS;
@@ -580,6 +643,8 @@ int deliverTimer(LKTimer* timer) {
 	elem.type = LK_TIMER;
 	memcpy(&elem.data.timer, timer, sizeof(LKTimer));
 
+	if(dropBox == NULL)
+		return FAILED;
 	queue_push(dropBox, &elem);
 
 	return SUCCESS;
@@ -599,12 +664,13 @@ int deliverEvent(LKEvent* event) {
 
 			short pid = interestList->id;
 			queue_t* dropBox = getProtoQueue(pid);
-
-			queue_t_elem elem;
-			elem.type = LK_EVENT;
-			memcpy(&elem.data.event, event, sizeof(LKEvent));
-			queue_push(dropBox, &elem);
-			interestList = interestList->next;
+			if(dropBox != NULL) {
+				queue_t_elem elem;
+				elem.type = LK_EVENT;
+				memcpy(&elem.data.event, event, sizeof(LKEvent));
+				queue_push(dropBox, &elem);
+				interestList = interestList->next;
+			}
 		}
 	}else {
 		lk_log("LK_RUNTIME", "DELIVER EVENT", "an event was sent that does not exist ignoring");
@@ -622,6 +688,8 @@ int deliverRequest(LKRequest* req) {
 		elem.type = LK_REQUEST;
 		memcpy(&elem.data.request, req, sizeof(LKRequest));
 
+		if(dropBox == NULL)
+			return FAILED;
 		queue_push(dropBox, &elem);
 
 		return SUCCESS;
@@ -633,17 +701,20 @@ int deliverReply(LKRequest* res) {
 	if(res->request == REPLY){
 		short id = res->proto_dest;
 
+#ifdef DEBUG
 		char desc[200];
 		bzero(desc, 200);
 		sprintf(desc, "Got a reply to %d", id);
 		lk_log("RUNTIME", "ALIVE", desc);
-
+#endif
 		queue_t* dropBox = getProtoQueue(id);
 
 		queue_t_elem elem;
 		elem.type = LK_REQUEST;
 		memcpy(&elem.data.request, res, sizeof(LKRequest));
 
+		if(dropBox == NULL)
+			return FAILED;
 		queue_push(dropBox, &elem);
 
 		return SUCCESS;

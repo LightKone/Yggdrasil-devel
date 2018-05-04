@@ -334,6 +334,7 @@ void* faultdetectorLinkBlocker_init(void* args) {
 					lk_log("FAULTDETECTOR", "NOT MODIFY", s);
 #endif
 				}
+				queue_push(dispatcher_queue, &elem);
 
 			} else { //This message is for me, therefore is comming from the network.
 				lk_ft_neigh* temp = malloc(sizeof(lk_ft_neigh));

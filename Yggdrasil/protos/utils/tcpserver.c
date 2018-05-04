@@ -152,6 +152,23 @@ static void * receiver(void* args) {
 								}else{
 									lk_log("SimpleTCPServer", "WARNING", "Unparseable request from client");
 								}
+							} else if(rb == 0) {
+								close(c->socket);
+								socket_list* toRemove = c;
+								if(clients == toRemove) {
+									clients = c->next;
+									c=clients;
+									free(toRemove);
+									continue;
+								} else {
+									socket_list* tmp = clients;
+									while(tmp->next != toRemove)
+										tmp = tmp->next;
+									tmp->next = tmp->next->next;
+									c=toRemove->next;
+									free(toRemove);
+									continue;
+								}
 							} else {
 								lk_log("SimpleTCPServer", "WARNING", "Unparseable request from client");
 							}

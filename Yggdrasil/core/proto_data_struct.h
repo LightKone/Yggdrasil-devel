@@ -15,7 +15,7 @@
 #include <uuid/uuid.h>
 #include "lightkone.h"
 
-#define LK_MESSAGE_PAYLOAD MAX_PAYLOAD -sizeof(short) //LKProto will be serialized into phy message payload
+#define LK_MESSAGE_PAYLOAD MAX_PAYLOAD -sizeof(short) -sizeof(unsigned int) //LKProto will be serialized into phy message payload (message id)
 
 // Lightkone message
 typedef struct _LKMessage{
@@ -121,11 +121,86 @@ void LKTimer_init_with_uuid(LKTimer* timer, uuid_t uuid, short protoOrigin, shor
 void LKTimer_set(LKTimer* timer, unsigned long firstNotification_us, unsigned long repeat_us);
 
 
+/**
+ * Sets the type of timer on the timer structure, to distinguish timers in a procotol
+ * @param timer timer structure to be set
+ * @param type codification of the type of timer
+ */
 void LKTimer_setType(LKTimer* timer, short type);
 
+/**
+ * Sets the payload of a timer to be exactly the given one.
+ * This fucntion first frees the previous payload if existed, and mallocs the new one.
+ * @param timer the timer structure to be set
+ * @param payload the payload to be set
+ * @param payloadLen the payload's lenght
+ */
 void LKTimer_setPayload(LKTimer* timer, void* payload, unsigned short payloadLen);
 
+/**
+ * Adds the payload to the existing payload of the timer
+ * This functions reallocs the paylaod of the timer in case more space is needed.
+ * @param timer the timer structure
+ * @param payload the paylaod to be added
+ * @param payloadLen the payload's lenght
+ */
 void LKTimer_addPayload(LKTimer* timer, void* payload, unsigned short payloadLen);
+
+/**
+ * Frees the payload of the timer
+ * @param timer timer structure that will have its paylaod freed
+ */
+void LKTimer_freePayload(LKTimer* timer);
+
+/**
+ * Initializes an event structure with the paramenters given
+ * The payload is set to NULL
+ * @param ev the event structure to be initialized
+ * @param protoOrigin the protocol generating the event
+ * @param notification_id the notification code that identifies the event
+ */
+void LKEvent_init(LKEvent* ev, short protoOrigin, short notification_id);
+
+/**
+ * Adds payload to the existing payload of the event structure
+ * This functions reallocs the payload if more space is needed
+ * @param ev the event structure
+ * @param payload the payload to be added
+ * @param payloadLen the payload's length
+ */
+void LKEvent_addPayload(LKEvent* ev, void* payload, unsigned short payloadLen);
+
+/**
+ * Frees the payload of the event structure
+ * @param ev the event structure that will have its payload freed
+ */
+void LKEvent_freePayload(LKEvent* ev);
+
+/**
+ * Initializes the request structure with the parameters given
+ * The payload is set to NULL
+ * @param req the request structure
+ * @param protoOrigin the protocol id creating the request structure
+ * @param protoDest the protocol id to which the request is to be delivered
+ * @param request the request type, if it is a REQUEST or a REPLY
+ * @param request_id the id code of the REQUEST/REPLY interaction
+ */
+void LKRequest_init(LKRequest* req, short protoOrigin, short protoDest, request_type request, short request_id);
+
+/**
+ * Adds payload to the existing payload of the request structure
+ * This function reallocs the payload if more space is needed
+ * @param req the request structure
+ * @param payload the paylaod to be added
+ * @param payloadLen the payload's length
+ */
+void LKRequest_addPayload(LKRequest* req, void* payload, unsigned short payloadLen);
+
+/**
+ * Frees the payload of the request structure
+ * @param req the request structure that will have its paylaod freed
+ */
+void LKRequest_freePayload(LKRequest* req);
 
 /**
  * Serializes the message content and headers of a message to the payload with the new payload and updates the headers
@@ -146,5 +221,8 @@ int pushPayload(LKMessage* msg, char* buffer, unsigned short len, short protoID,
  * @return The number of bytes read, or -1 if the bytes read is higher than the number of bytes asked to read
  */
 int popPayload(LKMessage* msg, char* buffer, unsigned short readlen);
+
+int pushEmptyPayload(LKMessage* msg, short protoID);
+int popEmptyPayload(LKMessage* msg);
 
 #endif /* PROTO_DATA_STRUCT_H_ */

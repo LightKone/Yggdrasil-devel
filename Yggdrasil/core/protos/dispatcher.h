@@ -19,7 +19,8 @@
 #include "lightkone.h"
 
 typedef enum dispatcher_requests_ {
-	DISPATCH_IGNORE_REG = 0
+	DISPATCH_IGNORE_REG = 0,
+	DISPATCH_SHUTDOWN = 1
 }dispatcher_requests;
 
 typedef enum dispatcher_ignore_ {

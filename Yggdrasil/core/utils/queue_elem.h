@@ -38,4 +38,7 @@ typedef struct queue_t_element_ {
 	queue_t_cont data;
 } queue_t_elem;
 
+void free_elem_payload(queue_t_elem* elem);
+
+
 #endif /* CORE_QUEUE_ELEM_H_ */

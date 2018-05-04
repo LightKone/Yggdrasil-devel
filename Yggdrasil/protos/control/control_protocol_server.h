@@ -6,7 +6,7 @@
  * Authors:
  * Pedro Ákos Costa (pah.costa@campus.fct.unl.pt)
  * João Leitão (jc.leitao@fct.unl.pt)
- * (C) 2017
+ * (C) 2018
  *********************************************************/
 
 #ifndef CONTROL_PROTOCOL_SERVER_H_
@@ -27,6 +27,7 @@
 #include "core/utils/utils.h"
 #include "core/proto_data_struct.h"
 #include "protos/control/control_protocol_utils.h"
+#include "protos/control/control_command_tree.h"
 
 void * control_protocol_server_init(void * args);
 

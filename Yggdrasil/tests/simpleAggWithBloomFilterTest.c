@@ -20,8 +20,8 @@
 #include "protos/membership/gls/global_membership.h"
 #include "protos/faultdetection/faultdetector.h"
 #include "core/utils/utils.h"
-#include "protos/aggregation/simpleAggregation.h"
-#include "protos/aggregation/simpleAggregationWithBloomFilter.h"
+#include "protos/aggregation/old_interface/simpleAggregation.h"
+#include "protos/aggregation/old_interface/simpleAggregationWithBloomFilter.h"
 #include "protos/utils/tcpserver.h"
 #include "protos/utils/topologyManager.h"
 

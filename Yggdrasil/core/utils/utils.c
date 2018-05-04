@@ -68,17 +68,32 @@ void lk_loginit(){
 }
 
 void lk_log(char* proto, char* event, char* desc){
+	char buffer[26];
+	struct tm* tm_info;
+
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
 	pthread_mutex_lock(&loglock);
-	printf("<%s> TIME: %ld %ld :: [%s] : [%s] %s\n", hostname, tv.tv_sec, tv.tv_usec, proto, event, desc);
+
+	tm_info = localtime(&tv.tv_sec);
+
+	strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", tm_info);
+
+	printf("<%s> TIME: %s %ld :: [%s] : [%s] %s\n", hostname, buffer, tv.tv_usec, proto, event, desc);
+	//printf("<%s> TIME: %ld %ld :: [%s] : [%s] %s\n", hostname, tv.tv_sec, tv.tv_usec, proto, event, desc);
 	pthread_mutex_unlock(&loglock);
 }
 
 void lk_logflush() {
+	char buffer[26];
+	struct tm* tm_info;
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
-	printf("<%s> TIME: %ld %ld :: [%s] : [%s] %s\n", hostname, tv.tv_sec, tv.tv_usec, "LK_RUNTIME", "QUIT", "Stopping process");
+	tm_info = localtime(&tv.tv_sec);
+
+	strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", tm_info);
+	printf("<%s> TIME: %s %ld :: [%s] : [%s] %s\n", hostname, buffer, tv.tv_usec, "LK_RUNTIME", "QUIT", "Stopping process");
+	//printf("<%s> TIME: %ld %ld :: [%s] : [%s] %s\n", hostname, tv.tv_sec, tv.tv_usec, "LK_RUNTIME", "QUIT", "Stopping process");
 	fflush(stdout);
 }
 

@@ -1,11 +1,3 @@
-/*
- * aggregation_tcpclient.c
- *
- *  Created on: 20/12/2017
- *      Author: akos
- */
-
-
 /*********************************************************
  * This code was written in the context of the Lightkone
  * European project.
@@ -28,7 +20,7 @@
 #include "protos/membership/gls/global_membership.h"
 #include "protos/faultdetection/faultdetector.h"
 #include "core/utils/utils.h"
-#include "protos/aggregation/simpleAggregation.h"
+#include "protos/aggregation/old_interface/simpleAggregation.h"
 
 #include <stdlib.h>
 #include <stdio.h>

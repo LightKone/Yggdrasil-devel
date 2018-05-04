@@ -69,6 +69,7 @@ typedef struct _proto_args {
  * @return SUCCESS if successful; FAILED otherwise
  */
 int lk_runtime_init(NetworkConfig* ntconf, int n_lk_protos, int n_protos, int n_apps);
+int lk_runtime_init_static(NetworkConfig* ntconf, int n_lk_protos, int n_protos, int n_apps);
 
 /**
  * Register a lightkone protocol in the runtime
@@ -101,6 +102,13 @@ short registerApp(queue_t** app_inBox, int max_event_type);
 /*********************************************************
  * Config
  *********************************************************/
+
+/**
+ * Change the dispatcher protocol main loop function (dispatcher init)
+ * @param dispatcher function pointer to new dispatcher main loop
+ * @return always returns SUCCESS
+ */
+int changeDispatcherFunction(void * (*dispatcher)(void*));
 
 /**
  * Update the protocol specific parameters
@@ -223,6 +231,12 @@ char* getMyAddr(char* s2);
  */
 void setMyAddr(WLANAddr* addr);
 
+/**
+ * Returns the raspberry number as a double.
+ * This function is used for testing purposes that need distributed values accross devices
+ * It returns the two last characters as a double value
+ * @return A double value
+ */
 double getValue();
 
 const char* getChannelIpAddress();

@@ -12,3 +12,31 @@
 #include "queue_elem.h"
 
 const int size_of_element_types[] = {sizeof(LKTimer), sizeof(LKEvent), sizeof(LKMessage), sizeof(LKRequest)};
+
+void free_elem_payload(queue_t_elem* elem) {
+	switch(elem->type) {
+	case LK_TIMER:
+		if(elem->data.timer.length > 0  && elem->data.timer.payload != NULL) {
+			free(elem->data.timer.payload);
+			elem->data.timer.length = 0;
+			elem->data.timer.payload = NULL;
+		}
+		break;
+	case LK_EVENT:
+		if(elem->data.event.length > 0 && elem->data.event.payload != NULL) {
+			free(elem->data.event.payload);
+			elem->data.event.length = 0;
+			elem->data.event.payload = NULL;
+		}
+		break;
+	case LK_REQUEST:
+		if(elem->data.request.length > 0 && elem->data.request.payload != NULL) {
+			free(elem->data.request.payload);
+			elem->data.request.length = 0;
+			elem->data.request.payload = NULL;
+		}
+		break;
+	default:
+		break;
+	}
+}

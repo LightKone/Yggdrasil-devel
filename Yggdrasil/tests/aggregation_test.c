@@ -23,10 +23,10 @@
 
 #include "protos/discovery/discovery_ft_lb.h"
 
-#include "protos/aggregation/aggregation_interface.h"
-#include "protos/aggregation/simple_aggregation.h"
-#include "protos/aggregation/simple_bloom_aggregation.h"
-#include "protos/aggregation/single_tree_aggregation.h"
+#include "protos/aggregation/old_interface/aggregation_interface.h"
+#include "protos/aggregation/old_interface/simple_aggregation.h"
+#include "protos/aggregation/old_interface/simple_bloom_aggregation.h"
+#include "protos/aggregation/old_interface/single_tree_aggregation.h"
 
 #include "protos/utils/tcpserver.h"
 #include "protos/utils/topologyManager.h"

@@ -6,7 +6,7 @@
  * Authors:
  * Pedro Ákos Costa (pah.costa@campus.fct.unl.pt)
  * João Leitão (jc.leitao@fct.unl.pt)
- * (C) 2017
+ * (C) 2018
  *********************************************************/
 
 #include "protos/control/control_discovery.h"
@@ -34,6 +34,7 @@ void* control_discovery_init(void* arg) { //argument is the time for the anuncem
 	char* myIP = NULL;
 	while(myIP == NULL || myIP[0] == '\0')
 		myIP = (char*) getChannelIpAddress();
+	lk_log("CONTROL_DISCOVERY", "INIT", myIP);
 	LKMessage_addPayload(&msg, myIP, 16);
 
 	dispatch(&msg);
@@ -48,46 +49,42 @@ void* control_discovery_init(void* arg) { //argument is the time for the anuncem
 
 	queue_t_elem elem;
 
+	int continue_operation = 1;
+
 	while(1){
-		if(queue_totalSize(inBox) > 0) {
-			queue_pop(inBox, &elem);
+		queue_pop(inBox, &elem);
 
-			if(elem.type == LK_TIMER){
+		if(elem.type == LK_TIMER){
+			//lk_log("CONTROL_DISCOVERY", "ANOUUNCE", "");
+			if(continue_operation) {
 				dispatch(&msg);
-
-				lk_log("CONTROL_DISCOVERY", "ANNOUNCE", "");
-
-				lastPeriod = lastPeriod * 2;
+				if(lastPeriod * 2 < 3600)
+					lastPeriod = lastPeriod * 2;
 				LKTimer_set(&announce, lastPeriod * 1000 * 1000 + (rand() % 2 * 1000 * 1000), 0);
 				setupTimer(&announce);
+			}
 
-			}else if(elem.type == LK_MESSAGE) {
-#ifdef DEBUG
-				char s[33];
-				memset(s, 0, 33);
-				lk_log("CONTROL_DISCOVERY", "RECVANUNCE", wlan2asc(&elem.data.msg.srcAddr, s));
-#endif
+		}else if(elem.type == LK_MESSAGE) {
+			LKMessage* recvMsg = &(elem.data.msg);
+			control_neighbor* candidate = malloc(sizeof(control_neighbor));
 
-				LKMessage* recvMsg = &(elem.data.msg);
+			memcpy(candidate->mac_addr.data, recvMsg->data, WLAN_ADDR_LEN);
+			memcpy(candidate->ip_addr, recvMsg->data+WLAN_ADDR_LEN, 16);
 
-				control_neighbor* candidate = malloc(sizeof(control_neighbor));
+			int knownAddr = 0;
+			control_neighbor* n = neighbors;
+			while(knownAddr == 0 && n != NULL) {
+				if(memcmp(n->mac_addr.data, candidate->mac_addr.data, WLAN_ADDR_LEN) == 0)
+					knownAddr = 1;
+				n = n->next;
+			}
 
-				memcpy(candidate->mac_addr.data, recvMsg->data, WLAN_ADDR_LEN);
-				memcpy(candidate->ip_addr, recvMsg->data+WLAN_ADDR_LEN, 16);
+			if(knownAddr == 0) {
+				candidate->next = neighbors;
+				neighbors = candidate;
+				n_neighbor++;
 
-				int knownAddr = 0;
-				control_neighbor* n = neighbors;
-				while(knownAddr == 0 && n != NULL) {
-					if(memcmp(n->mac_addr.data, candidate->mac_addr.data, WLAN_ADDR_LEN) == 0)
-						knownAddr = 1;
-					n = n->next;
-				}
-
-				if(knownAddr == 0) {
-					candidate->next = neighbors;
-					neighbors = candidate;
-					n_neighbor++;
-
+				if(continue_operation) {
 					//cancel the times
 					LKTimer_set(&announce, 0, 0);
 					setupTimer(&announce);
@@ -98,26 +95,38 @@ void* control_discovery_init(void* arg) { //argument is the time for the anuncem
 					setupTimer(&announce);
 				}
 
-			}else if(elem.type == LK_REQUEST){
-				if(elem.data.request.request == REQUEST && elem.data.request.request_type == CONTROL_DISC_GET_NEIGHBORS) {
-					LKRequest* request = &(elem.data.request);
-					request->proto_dest = request->proto_origin;
-					request->proto_origin = protoID;
-					request->request = REPLY;
-					request->length = sizeof(unsigned short) + (n_neighbor * (WLAN_ADDR_LEN + 16));
-					request->payload = malloc(request->length);
-					memcpy(request->payload, &n_neighbor, sizeof(unsigned short));
-					control_neighbor* n = neighbors;
-					void* data = request->payload + sizeof(unsigned short);
-					while(n != NULL) {
-						memcpy(data, n->mac_addr.data, WLAN_ADDR_LEN);
-						data += WLAN_ADDR_LEN;
-						memcpy(data, n->ip_addr, 16);
-						data += 16;
-						n = n->next;
+				LKEvent event;
+				event.proto_origin = protoID;
+				event.notification_id = NEW_NEIGHBOR_IP_NOTIFICATION;
+				event.length = 16;
+				event.payload = candidate->ip_addr;
+
+				deliverEvent(&event);
+			}
+
+		}else if(elem.type == LK_REQUEST){
+			if(elem.data.request.request == REQUEST) {
+				if(elem.data.request.request_type == DISABLE_DISCOVERY) {
+					lk_log("CONTROL_DISCOVERY", "LK_REQUEST RECEIVED", "DISABLE DISCOVERY");
+					if(continue_operation != 0) {
+						continue_operation = 0;
+						LKTimer_set(&announce, 0, 0);
+						setupTimer(&announce);
+
+						elem.data.request.request_type = DISPATCH_SHUTDOWN;
+						elem.data.request.proto_dest = 0; //Dispatch
+						deliverRequest(&elem.data.request);
 					}
-					deliverReply(request);
-					free(request->payload);
+
+				} else if (elem.data.request.request_type == ENABLE_DISCOVERY) {
+					lk_log("CONTROL_DISCOVERY", "LK_REQUEST RECEIVED", "ENABLE DISCOVERY");
+					if(continue_operation != 1) {
+						continue_operation = 1;
+						//setup the times for new times
+						lastPeriod = anuncePeriod;
+						LKTimer_set(&announce, (rand() % lastPeriod * 1000 * 1000) + 2 * 1000 * 1000, 0);
+						setupTimer(&announce);
+					}
 				}
 			}
 		}

@@ -11,6 +11,8 @@
 
 #include "dispatcher.h"
 
+static unsigned int mid = 0;
+
 static pthread_mutex_t ig_list_lock;
 
 typedef struct ignore_list_ {
@@ -105,6 +107,10 @@ static int serializeLKMessage(LKMessage* msg, char* buffer) {
 
 	char* tmp = buffer;
 
+	memcpy(tmp, &mid, sizeof(unsigned int));
+	len += sizeof(unsigned int);
+	tmp += sizeof(unsigned int);
+
 	memcpy(tmp, &msg->LKProto, sizeof(short));
 	len += sizeof(short);
 	tmp += sizeof(short);
@@ -115,10 +121,16 @@ static int serializeLKMessage(LKMessage* msg, char* buffer) {
 	return len;
 }
 
-static void deserializeLKMessage(LKMessage* msg, char* buffer, short bufferlen) {
+static unsigned int deserializeLKMessage(LKMessage* msg, char* buffer, short bufferlen) {
 
 	short total = bufferlen;
 	char* tmp = buffer;
+
+	unsigned int recv_mid;
+
+	memcpy(&recv_mid, tmp, sizeof(unsigned int));
+	total -= sizeof(unsigned int);
+	tmp += sizeof(unsigned int);
 
 	memcpy(&msg->LKProto, tmp, sizeof(short));
 	total -= sizeof(short);
@@ -126,6 +138,8 @@ static void deserializeLKMessage(LKMessage* msg, char* buffer, short bufferlen) 
 
 	memcpy(msg->data, tmp, total);
 	msg->dataLen = total;
+
+	return recv_mid;
 
 }
 
@@ -138,8 +152,11 @@ static void* dispatcher_receiver(void* args) {
 
 		if(ignore(phymsg.phyHeader.srcAddr) == IGNORE)
 			continue;
-
+#ifdef DEBUG
+		unsigned int recv_mid = deserializeLKMessage(&msg, phymsg.data, phymsg.dataLen);
+#else
 		deserializeLKMessage(&msg, phymsg.data, phymsg.dataLen);
+#endif
 		msg.destAddr = phymsg.phyHeader.destAddr;
 		msg.srcAddr = phymsg.phyHeader.srcAddr;
 #ifdef DEBUG
@@ -147,7 +164,7 @@ static void* dispatcher_receiver(void* args) {
 		char addr[33];
 		memset(addr, 0, 33);
 		memset(s, 0, 2000);
-		sprintf(s, "Delivering msg from %s to proto %d", wlan2asc(&msg.srcAddr, addr), msg.LKProto);
+		sprintf(s, "Delivering msg from %s with seq number %d to proto %d", wlan2asc(&msg.srcAddr, addr), recv_mid, msg.LKProto);
 		lk_log("DISPACTHER-RECEIVER", "ALIVE",s);
 #endif
 		deliver(&msg);
@@ -211,9 +228,10 @@ void* dispatcher_init(void* args) {
 #ifdef DEBUG
 			char s[200];
 			memset(s, 0, 200);
-			sprintf(s, "Message sent to network from %d", elem.data.msg.LKProto);
+			sprintf(s, "Message sent to network from %d with seq number %d", elem.data.msg.LKProto, mid);
 			lk_log("DISPACTHER-SENDER", "ALIVE",s);
 #endif
+			mid ++;
 		} else if(elem.type == LK_REQUEST){
 			LKRequest req = elem.data.request;
 			if(req.proto_dest == pargs->protoID && req.request == REQUEST && req.request_type == DISPATCH_IGNORE_REG){
@@ -251,6 +269,11 @@ void* dispatcher_init(void* args) {
 				else{
 					lk_log("DISPATCHER", "PANIC", "something went terribly wrong when deserializing request");
 				}
+			} else if(req.proto_dest == pargs->protoID && req.request == REQUEST && req.request_type == DISPATCH_SHUTDOWN) {
+				pthread_cancel(receiver);
+				close(ch->sockid);
+				lk_log("DISPATCHER", "REQUEST SHUTDOWN", "Going down...");
+				return NULL;
 			}
 		}
 		else {

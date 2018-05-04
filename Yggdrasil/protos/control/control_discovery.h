@@ -6,7 +6,7 @@
  * Authors:
  * Pedro Ákos Costa (pah.costa@campus.fct.unl.pt)
  * João Leitão (jc.leitao@fct.unl.pt)
- * (C) 2017
+ * (C) 2018
  *********************************************************/
 
 #ifndef CONTROL_DISCOVERY_H_
@@ -24,8 +24,13 @@ typedef struct control_neighbor_ {
 } control_neighbor;
 
 typedef enum CONTROL_DISC_REQ_ {
-	CONTROL_DISC_GET_NEIGHBORS
+	DISABLE_DISCOVERY,
+	ENABLE_DISCOVERY
 } CONTROL_DISC_REQ;
+
+typedef enum CONTROL_DISC_NOTF_ {
+	NEW_NEIGHBOR_IP_NOTIFICATION
+} CONTROL_DISC_NOTF;
 
 void* control_discovery_init(void* arg);
 

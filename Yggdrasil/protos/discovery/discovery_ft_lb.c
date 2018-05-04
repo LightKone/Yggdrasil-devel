@@ -326,18 +326,24 @@ void* discovery_ft_lb_init(void* args) {
 	while(1) {
 		queue_pop(inBox, &elem);
 		if(elem.type == LK_MESSAGE) {
-			if(elem.data.msg.LKProto != myProtoID) { //This message is not for me therefore is going to the network
 
+
+
+			if(elem.data.msg.LKProto != myProtoID) { //This message is not for me therefore is going to the network
+				//printf("PASSING MSG %d\n", elem.data.msg.LKProto);
 				if(sentInLastInterval == 0) {
 
 					pushPayload(&elem.data.msg, (char*) pargs->myuuid, sizeof(uuid_t), myProtoID, &bcastAddress);
+					//printf("pushed %d\n", elem.data.msg.dataLen);
 					sentInLastInterval = 1;
 				} else if (memcmp(bcastAddress.data, elem.data.msg.destAddr.data, WLAN_ADDR_LEN) == 0) {
 
 					pushPayload(&elem.data.msg, (char*) pargs->myuuid, sizeof(uuid_t), myProtoID, &bcastAddress);
+					//printf("pushed %d\n", elem.data.msg.dataLen);
 				}else{
 
 				}
+				queue_push(dispatcher_queue, &elem);
 
 			} else { //This message is for me, therefore is comming from the network.
 				lk_ft_neigh* temp = malloc(sizeof(lk_ft_neigh));
@@ -345,6 +351,7 @@ void* discovery_ft_lb_init(void* args) {
 				unsigned short read = popPayload(&elem.data.msg, (char*) temp->uuid, sizeof(uuid_t));
 				memcpy(temp->addr.data, elem.data.msg.srcAddr.data, WLAN_ADDR_LEN);
 
+				//printf("poped %d size %d\n", elem.data.msg.LKProto, elem.data.msg.dataLen);
 
 				if(read == sizeof(uuid_t)) {
 					if(database == NULL) {
@@ -391,6 +398,8 @@ void* discovery_ft_lb_init(void* args) {
 
 				if(elem.data.msg.LKProto != myProtoID) {
 
+					//printf("deliver to %d\n", elem.data.msg.LKProto);
+
 					filterAndDeliver(&elem.data.msg);
 				}
 			}
@@ -407,7 +416,7 @@ void* discovery_ft_lb_init(void* args) {
 					msg.data.msg.dataLen = 0;
 
 					pushPayload(&msg.data.msg, (char*) pargs->myuuid, sizeof(uuid_t), myProtoID, &bcastAddress);
-
+					//printf("pushed %d\n", msg.data.msg.dataLen);
 					queue_push(dispatcher_queue, &msg);
 				}
 

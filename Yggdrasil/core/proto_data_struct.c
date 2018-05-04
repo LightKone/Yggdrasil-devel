@@ -85,10 +85,72 @@ void LKTimer_addPayload(LKTimer* timer, void* payload, unsigned short payloadLen
 	timer->length += payloadLen;
 }
 
+void LKTimer_freePayload(LKTimer* timer) {
+	if(timer->length > 0 && timer->payload != NULL) {
+		free(timer->payload);
+		timer->payload = NULL;
+		timer->length = 0;
+	}
+}
+
+void LKEvent_init(LKEvent* ev, short protoOrigin, short notification_id) {
+	ev->proto_origin = protoOrigin;
+	ev->notification_id = notification_id;
+	ev->length  = 0;
+	ev->payload = NULL;
+}
+
+void LKEvent_addPayload(LKEvent* ev, void* payload, unsigned short payloadLen) {
+	if(ev->payload == NULL){
+			ev->payload = malloc(payloadLen);
+		}else{
+			ev->payload = realloc(ev->payload, ev->length + payloadLen);
+		}
+
+		memcpy(ev->payload+ev->length, payload, payloadLen);
+
+		ev->length += payloadLen;
+}
+
+void LKEvent_freePayload(LKEvent* ev) {
+	if(ev->length > 0 && ev->payload != NULL) {
+		free(ev->payload);
+		ev->payload = NULL;
+		ev->length = 0;
+	}
+}
+
+void LKRequest_init(LKRequest* req, short protoOrigin, short protoDest, request_type request, short request_id) {
+	req->proto_origin = protoOrigin;
+	req->proto_dest = protoDest;
+	req->request = request;
+	req->request_type = request_id;
+}
+
+void LKRequest_addPayload(LKRequest* req, void* payload, unsigned short payloadLen) {
+	if(req->payload == NULL){
+			req->payload = malloc(payloadLen);
+		}else{
+			req->payload = realloc(req->payload, req->length + payloadLen);
+		}
+
+		memcpy(req->payload+req->length, payload, payloadLen);
+
+		req->length += payloadLen;
+}
+
+void LKRequest_freePayload(LKRequest* req) {
+	if(req->length > 0 && req->payload != NULL) {
+		free(req->payload);
+		req->payload = NULL;
+		req->length = 0;
+	}
+}
+
 int pushPayload(LKMessage* msg, char* buffer, unsigned short len, short protoID, WLANAddr* newDest) {
 	unsigned short newPayloadSize = len + (sizeof(unsigned short) * 3) + WLAN_ADDR_LEN + msg->dataLen;
 
-	if(newPayloadSize > MAX_PAYLOAD)
+	if(newPayloadSize > LK_MESSAGE_PAYLOAD)
 		return FAILED;
 
 	char dataCopy[msg->dataLen];
@@ -128,7 +190,7 @@ int popPayload(LKMessage* msg, char* buffer, unsigned short readlen) {
 	memcpy(buffer, tmp, readBytes);
 	tmp += readBytes;
 
-	msg->dataLen = msg->dataLen - (sizeof(unsigned short) - readBytes);
+	msg->dataLen = msg->dataLen - sizeof(unsigned short) - readBytes;
 	if(msg->dataLen > 0) {
 		memcpy(&msg->LKProto, tmp, sizeof(unsigned short));
 		tmp += sizeof(unsigned short);
@@ -149,7 +211,64 @@ int popPayload(LKMessage* msg, char* buffer, unsigned short readlen) {
 		char remainingPayload[payloadLen];
 		memcpy(remainingPayload, tmp, payloadLen);
 
-		memset(msg->data, 0, MAX_PAYLOAD);
+		memset(msg->data, 0, LK_MESSAGE_PAYLOAD);
+		memcpy(msg->data, remainingPayload, payloadLen);
+		msg->dataLen = payloadLen;
+	}
+
+	return readBytes;
+}
+
+int pushEmptyPayload(LKMessage* msg, short protoID) {
+
+	unsigned short newPayloadSize = msg->dataLen + 2*sizeof(short);
+	if(newPayloadSize > LK_MESSAGE_PAYLOAD)
+		return FAILED;
+
+	char dataCopy[msg->dataLen];
+	memcpy(dataCopy, msg->data, msg->dataLen);
+
+	void* tmp = msg->data;
+	memcpy(tmp, &msg->LKProto, sizeof(unsigned short));
+	tmp += sizeof(unsigned short);
+
+	memcpy(tmp, &msg->dataLen, sizeof(unsigned short));
+	tmp += sizeof(unsigned short);
+
+	memcpy(tmp, dataCopy, msg->dataLen);
+
+	msg->dataLen = newPayloadSize;
+	msg->LKProto = protoID;
+
+	return SUCCESS;
+}
+
+int popEmptyPayload(LKMessage* msg) {
+
+	unsigned short readBytes = 0;
+	void* tmp = msg->data;
+
+	if(msg->dataLen > 0) {
+		memcpy(&msg->LKProto, tmp, sizeof(unsigned short));
+		tmp += sizeof(unsigned short);
+
+		unsigned short payloadLen = 0;
+		memcpy(&payloadLen, tmp, sizeof(unsigned short));
+		tmp += sizeof(unsigned short);
+		msg->dataLen = msg->dataLen - (sizeof(unsigned short)*2);
+
+#ifdef DEBUG
+		if(payloadLen != msg->dataLen) {
+			char s[2000];
+			memset(s, 0, 2000);
+			sprintf(s, "Warning, enclosing message has %u bytes but was expected to have %u bytes instead\n",msg->dataLen, payloadLen);
+			lk_log("LKMESSAGE", "WARNING", s);
+		}
+#endif
+		char remainingPayload[payloadLen];
+		memcpy(remainingPayload, tmp, payloadLen);
+
+		memset(msg->data, 0, LK_MESSAGE_PAYLOAD);
 		memcpy(msg->data, remainingPayload, payloadLen);
 		msg->dataLen = payloadLen;
 	}

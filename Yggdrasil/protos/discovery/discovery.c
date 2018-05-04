@@ -80,9 +80,12 @@ void processLKRequest(LKRequest* req, short protoID){
 			}else{
 				memcpy(&request, req->payload, req->length);
 				reply = existNeight(request);
+
+				req->payload = realloc(req->payload, sizeof(int));
 				memcpy(req->payload, &reply, sizeof(int));
 				req->length = sizeof(int);
 				deliverReply(req);
+				free(req->payload);
 			}
 			break;
 		case DISC_REQ_GET_N_NEIGHS:
@@ -90,10 +93,12 @@ void processLKRequest(LKRequest* req, short protoID){
 				lk_log("DISCOV", "ERROR", "Invalid request format");
 
 			}else{
+				req->payload = malloc(sizeof(int));
 				reply = getKnownNeighbors();
 				memcpy(req->payload, &reply, sizeof(int));
 				req->length = sizeof(int);
 				deliverReply(req);
+				free(req->payload);
 			}
 			break;
 		case DISC_REQ_GET_NEIGH:
@@ -103,15 +108,19 @@ void processLKRequest(LKRequest* req, short protoID){
 			}else{
 				memcpy(&request, req->payload, req->length);
 				neigh* n = getNeighbor(request);
-				if(n == NULL)
+
+				if(n == NULL){
+					req->payload = realloc(req->payload, sizeof(int));
 					memcpy(req->payload, &reply, sizeof(int));
-				else{
+				}else{
 					reply = 1;
+					req->payload = realloc(req->payload, sizeof(int) + sizeof(neigh));
 					memcpy(req->payload, &reply, sizeof(int));
 					memcpy(req->payload+sizeof(int), n, sizeof(neigh));
 				}
 				req->length = sizeof(int)+(sizeof(neigh)*reply);
 				deliverReply(req);
+				free(req->payload);
 				free(n);
 			}
 			break;
@@ -121,11 +130,14 @@ void processLKRequest(LKRequest* req, short protoID){
 			}else{
 				neigh* n = getNeighbors();
 				reply = getKnownNeighbors();
+
+				req->payload = malloc(sizeof(int) + reply*sizeof(neigh));
 				memcpy(req->payload, &reply, sizeof(int));
 				if(n != NULL)
 					memcpy(req->payload+sizeof(int), n, sizeof(neigh)*reply);
 				req->length = sizeof(int)+sizeof(neigh)*reply;
 				deliverReply(req);
+				free(req->payload);
 				free(n);
 			}
 			break;
@@ -134,14 +146,18 @@ void processLKRequest(LKRequest* req, short protoID){
 				lk_log("DISCOV", "ERROR", "Invalid request format");
 			}else{
 				neigh* n = getRandomNeighbor();
-				if(n == NULL)
+				if(n == NULL){
+					req->payload = malloc(sizeof(int));
 					memcpy(req->payload, &reply, sizeof(int));
-				else{
+				}else{
 					reply = 1;
+					req->payload = malloc(sizeof(int) + sizeof(neigh));
 					memcpy(req->payload, &reply, sizeof(int));
 					memcpy(req->payload+sizeof(int), n, sizeof(neigh));
 				}
+				req->length = sizeof(int)+sizeof(neigh)*reply;
 				deliverReply(req);
+				free(req->payload);
 			}
 			break;
 		default:
