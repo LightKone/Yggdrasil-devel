@@ -101,9 +101,11 @@ int main(int argc, char* agrv[]){
 
 			dispatch(&msg); //send the message to the network
 		}
+
+		gettimeofday((struct timeval *) &nextoperation,NULL);
+		nextoperation.tv_sec += t / 1000000;
+		nextoperation.tv_nsec += (t % 1000000) * 1000;
 	}
 
 	return 0;
 }
-
-

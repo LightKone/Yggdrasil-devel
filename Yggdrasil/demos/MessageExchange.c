@@ -23,12 +23,14 @@
 int main(int argc, char* argv[]){
 
 	char dest_addr[6];
-	if(argc == 1){
+	if(argc == 2){
 		if(str2wlan(dest_addr, argv[1]) == -1){
 			printf("Wrong input format, use a valid mac address example:\nUsage: ff:ff:ff:ff:ff:ff\n");
+			exit(1);
 		}
 	}else{
 		printf("Program takes 1 input, example:\nUsage: ff:ff:ff:ff:ff:ff\n");
+		exit(1);
 	}
 
 	//define a network configuration
@@ -118,9 +120,11 @@ int main(int argc, char* argv[]){
 
 			dispatch(&msg); //send the message to the network
 		}
+
+		gettimeofday((struct timeval *) &nextoperation,NULL);
+		nextoperation.tv_sec += t / 1000000;
+		nextoperation.tv_nsec += (t % 1000000) * 1000;
 	}
 
 	return 0;
 }
-
-
