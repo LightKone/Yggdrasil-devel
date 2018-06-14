@@ -13,6 +13,7 @@ Inside there are two directories containing source code:
 In order to compile Yggdrasil you need to have the following depencies installed:
 
 * libnl3
+* libnl-genl-3
 * uuid
 * cmake
 
